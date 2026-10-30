@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>イータ君 中ビームよけ</title>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
 :root{--felt:#0d4a34;--felt2:#083426;--ink:#fff8e6;--red:#e0262b}
 html,body{margin:0;height:100%;background:var(--felt2);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho",serif;color:var(--ink)}
@@ -26,6 +27,8 @@ canvas{display:block;width:100vw;height:100vh;height:100dvh}
 .rkbox td{padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.12)}
 .rkbox .no{width:2.2em;text-align:center}.rkbox .na{text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:9em}
 .rkbox .sc{text-align:right;color:#ffd84a;font-weight:700;white-space:nowrap}.rkbox small{font-size:.7em;margin-left:2px;color:#fff}
+.rkbox .na img,.who img{width:24px;height:24px;border-radius:50%;vertical-align:middle;margin-right:6px;object-fit:cover}
+.who{font-size:17px!important}
 .rkbox tr.me td{background:rgba(255,216,74,.18)}
 #hud{position:fixed;top:max(10px,env(safe-area-inset-top));left:0;right:0;text-align:center;font:700 26px/1 inherit;font-family:inherit;text-shadow:0 2px 0 #000;pointer-events:none}
 #hud small{display:block;font-size:12px;opacity:.75;margin-top:4px}
@@ -212,11 +215,16 @@ function draw(){
 // ---- 画面 ----
 // ランキング: Google Apps Script(スプレッドシート)に保存。部屋はURLの ?r=xxx(なければ main)
 const API='https://script.google.com/macros/s/AKfycbynBcBj3S36_LHCpeo2NPMi2oa24NuiCL09STJsDQmcHFH0quIwmIFkRX5LpxJjJSXIHA/exec';
-const ROOM=(new URLSearchParams(location.search).get('r')||'main').slice(0,20);
+// LINEの中で開いた時(LIFF)は LINEの名前・アイコン・ID を使う。外のブラウザでは手入力の名前
+const LIFF_ID='2012295121-PtYTLtJI';
+let lineUser=null;   // {id,name,pic}
+// LIFF経由で開くと ?liff.state=... に元のクエリが入ることがあるので両方見る
+const QS=new URLSearchParams(location.search), QS2=new URLSearchParams((QS.get('liff.state')||'').replace(/^[^?]*\?/,''));
+const ROOM=(QS.get('r')||QS2.get('r')||'main').slice(0,20);
 let myName='';try{myName=localStorage.getItem('eta_chun_name')||''}catch(e){}
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function saveName(v){myName=v.trim().slice(0,12);try{localStorage.setItem('eta_chun_name',myName)}catch(e){}}
-function api(q){return fetch(API+'?'+new URLSearchParams(Object.assign({r:ROOM},q))).then(r=>r.json())}
+function api(q){const b={r:ROOM};if(lineUser){b.u=lineUser.id;if(lineUser.pic)b.p=lineUser.pic}return fetch(API+'?'+new URLSearchParams(Object.assign(b,q))).then(r=>r.json())}
 let pending=null, lastOver=null;   // pending=送信中のスコア / lastOver=[秒,ベスト更新,ギリギリ,送信済み]
 function send(){const o=lastOver;if(!o||o[3]||!myName||!(o[0]>0))return;o[3]=true;pending=api({a:'add',n:myName,s:o[0].toFixed(2),g:o[2]}).catch(()=>null)}
 function showTitle(){
@@ -224,13 +232,13 @@ function showTitle(){
   ui.className='';ui.innerHTML=`<h1>イータ君<br><b>中</b>ビームよけ</h1>
   <p>画面の端から出てくる「中」の牌が<br>ビームを撃ってくる。<br>指でなぞってイータ君を動かし、<br>よけ続けろ。</p>
   <p style="font-size:13px;opacity:.7">赤い線が太くなったら発射の合図</p>
-  <input id="nm" class="nm" maxlength="12" placeholder="なまえ（ランキング用）" value="${esc(myName)}">
+  ${lineUser?`<p class="who">${lineUser.pic?`<img src="${esc(lineUser.pic)}">`:''}${esc(lineUser.name)} さん</p>`:`<input id="nm" class="nm" maxlength="12" placeholder="なまえ（ランキング用）" value="${esc(myName)}">`}
   ${best?`<p>ベスト ${best.toFixed(2)} 秒</p>`:''}
   <button class="btn go" id="go">はじめる</button>
   <button class="btn rk" id="rk">ランキング</button>`;
-  const nm=document.getElementById('nm');nm.onchange=()=>saveName(nm.value);
-  document.getElementById('go').onclick=()=>{saveName(nm.value);start()};
-  document.getElementById('rk').onclick=()=>{saveName(nm.value);showRank('title')};
+  const nm=document.getElementById('nm'),take=()=>{if(nm)saveName(nm.value)};if(nm)nm.onchange=take;
+  document.getElementById('go').onclick=()=>{take();start()};
+  document.getElementById('rk').onclick=()=>{take();showRank('title')};
 }
 function start(){initAudio();if(AC&&AC.state==='suspended')AC.resume();reset();state='play';ui.className='hide';play('start',.9)}
 function rank(s){return s<10?'還付金 100円':s<20?'還付金 1,000円':s<35?'還付金 1万円':s<60?'還付金 10万円':'還付確定'}
@@ -253,10 +261,10 @@ async function showRank(from){
   ui.innerHTML=`<h1 style="font-size:32px">ランキング</h1><div class="rkbox"><p>読み込み中…</p></div>`;
   let d=null;
   try{ if(pending){await pending;pending=null} d=await api({a:'list'}) }catch(e){}
-  const rows=d&&d.list?d.list:null, k=rows?rows.findIndex(r=>r.n===myName):-1;
+  const rows=d&&d.list?d.list:null, k=rows?rows.findIndex(r=>lineUser?r.me:r.n===myName):-1;
   const body=!rows?'<p>ランキングを読み込めませんでした。<br>電波のいい所でもう一回押してね。</p>'
     :!rows.length?'<p>まだ誰も載っていない。<br>一番乗りのチャンス！</p>'
-    :'<table>'+rows.slice(0,10).map((r,i)=>`<tr class="${i===k?'me':''}"><td class="no">${['🥇','🥈','🥉'][i]||(i+1)}</td><td class="na">${esc(r.n)}</td><td class="sc">${Number(r.s).toFixed(2)}<small>秒</small></td></tr>`).join('')+'</table>'
+    :'<table>'+rows.slice(0,10).map((r,i)=>`<tr class="${i===k?'me':''}"><td class="no">${['🥇','🥈','🥉'][i]||(i+1)}</td><td class="na">${r.i?`<img src="${esc(r.i)}">`:''}${esc(r.n)}</td><td class="sc">${Number(r.s).toFixed(2)}<small>秒</small></td></tr>`).join('')+'</table>'
       +(k>=10?`<p>あなたは ${k+1} 位（${Number(rows[k].s).toFixed(2)}秒）</p>`:'');
   ui.innerHTML=`<h1 style="font-size:32px">ランキング</h1>
   <div class="rkbox">${body}</div>
@@ -269,6 +277,17 @@ async function showRank(from){
 
 face.onload=()=>{};
 showTitle();
+// LIFFの準備(LINEの中だけ)。失敗しても手入力の名前でそのまま遊べる
+if(window.liff){
+  liff.init({liffId:LIFF_ID}).then(()=>{
+    if(!liff.isLoggedIn())return;
+    return liff.getProfile().then(p=>{
+      lineUser={id:p.userId,name:String(p.displayName||'').slice(0,20),pic:p.pictureUrl||''};
+      myName=lineUser.name;
+      if(state==='title')showTitle();
+    });
+  }).catch(()=>{});
+}
 last=performance.now();
 (function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;update(dt);draw();requestAnimationFrame(loop)})(last);
 </script>
