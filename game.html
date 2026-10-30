@@ -247,6 +247,7 @@ function showOver(sc,nb){
   const [s,b,g]=lastOver;
   state='over';ui.className='';
   ui.innerHTML=`<div class="over">ちんだ。</div>
+  <p style="font-size:15px;color:#ffd84a">還付金の振込予定日は<br>2026年11月21日……だったのに。</p>
   <div class="big">${s.toFixed(2)}<span style="font-size:.45em"> 秒</span></div>
   <p>${rank(s)}${b?'　<b style="color:#ffd84a">ベスト更新！</b>':''}<br>ギリギリ回避 ${g} 回 ／ ベスト ${best.toFixed(2)} 秒</p>
   ${myName?'':`<input id="nm" class="nm" maxlength="12" placeholder="なまえを入れるとランキングに載る">`}
