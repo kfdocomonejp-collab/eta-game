@@ -173,7 +173,7 @@ function tileDraw(s){
     cx.restore();
   }
   // 牌(中)
-  cx.save();cx.translate(x,y);cx.rotate(s.ang+Math.PI/2);
+  cx.save();cx.translate(x,y);cx.rotate(s.ang-Math.PI/2);   // 牌の下側(発射口)がイータ君を向く
   let glow=s.ph==='charge'?s.pt/s.charge:s.ph==='fire'?1:0;
   if(glow>0){cx.shadowColor='rgba(255,40,40,.9)';cx.shadowBlur=U*6*glow}
   rr(-w/2,-h/2+U*1.2,w,h,U*1.6,'#1d7a3e');            // 牌の背(緑)
