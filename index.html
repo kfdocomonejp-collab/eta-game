@@ -66,7 +66,8 @@ function tone(f0,f1,dur,type='sawtooth',g=.08){
 let state='title', P, tiles, parts, t, last, spawnT, best=0, shake=0, deadT=0, near=0;
 try{best=+localStorage.getItem('eta_chun_best')||0}catch(e){}
 const FW=()=>U*17, FH=()=>FW()*192/256, HIT=()=>FW()*0.36;
-function reset(){P={x:W/2,y:H*.62,vx:0,vy:0};tiles=[];parts=[];t=0;spawnT=1.0;shake=0;near=0}
+let homeY=null;
+function reset(){P={x:W/2,y:clamp(homeY??H*.62,FH()/2,H-FH()/2),vx:0,vy:0};tiles=[];parts=[];t=0;spawnT=1.0;shake=0;near=0}
 
 // ---- 操作: 指をずらした分だけ動く(顔が指で隠れない) ----
 let drag=null;
@@ -172,7 +173,7 @@ function tileDraw(s){
     cx.restore();
   }
   // 牌(中)
-  cx.save();cx.translate(x,y);
+  cx.save();cx.translate(x,y);cx.rotate(s.ang+Math.PI/2);
   let glow=s.ph==='charge'?s.pt/s.charge:s.ph==='fire'?1:0;
   if(glow>0){cx.shadowColor='rgba(255,40,40,.9)';cx.shadowBlur=U*6*glow}
   rr(-w/2,-h/2+U*1.2,w,h,U*1.6,'#1d7a3e');            // 牌の背(緑)
@@ -239,6 +240,7 @@ function showTitle(){
   const nm=document.getElementById('nm'),take=()=>{if(nm)saveName(nm.value)};if(nm)nm.onchange=take;
   document.getElementById('go').onclick=()=>{take();start()};
   document.getElementById('rk').onclick=()=>{take();showRank('title')};
+  const rb=document.getElementById('rk').getBoundingClientRect();homeY=rb.bottom+U*3+FH()/2;P.y=clamp(homeY,FH()/2,H-FH()/2);
 }
 function start(){initAudio();if(AC&&AC.state==='suspended')AC.resume();reset();state='play';ui.className='hide';play('start',.9)}
 function rank(s){return s<10?'還付金 100円':s<20?'還付金 1,000円':s<35?'還付金 1万円':s<60?'還付金 10万円':'還付確定'}
@@ -246,7 +248,7 @@ function showOver(sc,nb){
   if(sc!==undefined){lastOver=[sc,nb,near,false];send()}   // 名前があれば終わった時点で送っておく
   const [s,b,g]=lastOver;
   state='over';ui.className='';
-  ui.innerHTML=`<div class="over">ちんだ？</div>
+  ui.innerHTML=`<div class="over">ちんだ。</div>
   <div class="big">${s.toFixed(2)}<span style="font-size:.45em"> 秒</span></div>
   <p>${rank(s)}${b?'　<b style="color:#ffd84a">ベスト更新！</b>':''}<br>ギリギリ回避 ${g} 回 ／ ベスト ${best.toFixed(2)} 秒</p>
   ${myName?'':`<input id="nm" class="nm" maxlength="12" placeholder="なまえを入れるとランキングに載る">`}
