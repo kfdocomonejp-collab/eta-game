@@ -67,8 +67,8 @@ function tone(f0,f1,dur,type='sawtooth',g=.08){
 let state='title', P, tiles, parts, t, last, spawnT, best=0, shake=0, deadT=0, near=0;
 try{best=+localStorage.getItem('eta_chun_best')||0}catch(e){}
 const FW=()=>U*17, FH=()=>FW()*192/256, HIT=()=>FW()*0.36;
-let homeY=null;
-function reset(){P={x:W/2,y:clamp(homeY??H*.62,FH()/2,H-FH()/2),vx:0,vy:0};tiles=[];parts=[];t=0;spawnT=1.0;shake=0;near=0}
+let homeY=null, faceGone=false;
+function reset(){faceGone=false;P={x:W/2,y:clamp(homeY??H*.62,FH()/2,H-FH()/2),vx:0,vy:0};tiles=[];parts=[];t=0;spawnT=1.0;shake=0;near=0}
 
 // ---- 操作: 指をずらした分だけ動く(顔が指で隠れない) ----
 let drag=null;
@@ -137,7 +137,7 @@ function upParts(dt){
   shake*=Math.pow(.02,dt);
 }
 function die(s){
-  state='dead';deadT=0;shake=U*3;
+  state='dead';deadT=0;shake=U*3;faceGone=true;
   tone(160,40,.6,'sawtooth',.12);setTimeout(()=>play('over',1),250);
   for(let i=0;i<60;i++)parts.push({x:P.x,y:P.y,vx:rand(-1,1)*U*90,vy:rand(-1,1)*U*90,l:rand(.4,1),c:Math.random()<.5?'#8dc63f':'#fff1c0'});
   if(navigator.vibrate)try{navigator.vibrate(200)}catch(e){}
@@ -186,7 +186,7 @@ function tileDraw(s){
 function rr(x,y,w,h,r,fill){cx.beginPath();cx.roundRect?cx.roundRect(x,y,w,h,r):cx.rect(x,y,w,h);cx.fillStyle=fill;cx.fill()}
 const ease=u=>{u=clamp(u,0,1);return u*u*(3-2*u)};
 function faceDraw(){
-  if(state==='dead'&&deadT>.05)return;
+  if(faceGone&&!(state==='dead'&&deadT<=.05))return;   // 撃たれた後(結果・ランキング画面も)は顔を出さない
   const w=FW(),h=FH();
   cx.save();cx.translate(P.x,P.y);
   const wob=state==='play'?Math.sin(t*6)*.04:0;cx.rotate(wob);
