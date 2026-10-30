@@ -19,6 +19,14 @@ canvas{display:block;width:100vw;height:100vh;height:100dvh}
 .btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.5)}
 .go{background:#ffd84a;color:#2a1a00}
 .line{background:#06c755;color:#fff}
+.rk{background:#fff8e6;color:#3a2000}
+.nm{pointer-events:auto;font:16px/1.2 inherit;font-family:inherit;padding:10px 14px;border-radius:10px;border:2px solid #ffd84a;background:rgba(0,0,0,.35);color:#fff;width:min(260px,80vw);text-align:center;box-sizing:border-box}
+.rkbox{pointer-events:auto;background:rgba(0,0,0,.45);border:1px solid rgba(255,216,74,.5);border-radius:14px;padding:10px 14px;width:min(340px,88vw);box-sizing:border-box;max-height:55vh;overflow:auto}
+.rkbox table{width:100%;border-collapse:collapse;font-size:17px}
+.rkbox td{padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.12)}
+.rkbox .no{width:2.2em;text-align:center}.rkbox .na{text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:9em}
+.rkbox .sc{text-align:right;color:#ffd84a;font-weight:700;white-space:nowrap}.rkbox small{font-size:.7em;margin-left:2px;color:#fff}
+.rkbox tr.me td{background:rgba(255,216,74,.18)}
 #hud{position:fixed;top:max(10px,env(safe-area-inset-top));left:0;right:0;text-align:center;font:700 26px/1 inherit;font-family:inherit;text-shadow:0 2px 0 #000;pointer-events:none}
 #hud small{display:block;font-size:12px;opacity:.75;margin-top:4px}
 </style>
@@ -202,30 +210,61 @@ function draw(){
 }
 
 // ---- 画面 ----
+// ランキング: Google Apps Script(スプレッドシート)に保存。部屋はURLの ?r=xxx(なければ main)
+const API='https://script.google.com/macros/s/AKfycbynBcBj3S36_LHCpeo2NPMi2oa24NuiCL09STJsDQmcHFH0quIwmIFkRX5LpxJjJSXIHA/exec';
+const ROOM=(new URLSearchParams(location.search).get('r')||'main').slice(0,20);
+let myName='';try{myName=localStorage.getItem('eta_chun_name')||''}catch(e){}
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function saveName(v){myName=v.trim().slice(0,12);try{localStorage.setItem('eta_chun_name',myName)}catch(e){}}
+function api(q){return fetch(API+'?'+new URLSearchParams(Object.assign({r:ROOM},q))).then(r=>r.json())}
+let pending=null, lastOver=null;   // pending=送信中のスコア / lastOver=[秒,ベスト更新,ギリギリ,送信済み]
+function send(){const o=lastOver;if(!o||o[3]||!myName||!(o[0]>0))return;o[3]=true;pending=api({a:'add',n:myName,s:o[0].toFixed(2),g:o[2]}).catch(()=>null)}
 function showTitle(){
   state='title';reset();
   ui.className='';ui.innerHTML=`<h1>イータ君<br><b>中</b>ビームよけ</h1>
   <p>画面の端から出てくる「中」の牌が<br>ビームを撃ってくる。<br>指でなぞってイータ君を動かし、<br>よけ続けろ。</p>
   <p style="font-size:13px;opacity:.7">赤い線が太くなったら発射の合図</p>
+  <input id="nm" class="nm" maxlength="12" placeholder="なまえ（ランキング用）" value="${esc(myName)}">
   ${best?`<p>ベスト ${best.toFixed(2)} 秒</p>`:''}
-  <button class="btn go" id="go">はじめる</button>`;
-  document.getElementById('go').onclick=start;
+  <button class="btn go" id="go">はじめる</button>
+  <button class="btn rk" id="rk">ランキング</button>`;
+  const nm=document.getElementById('nm');nm.onchange=()=>saveName(nm.value);
+  document.getElementById('go').onclick=()=>{saveName(nm.value);start()};
+  document.getElementById('rk').onclick=()=>{saveName(nm.value);showRank('title')};
 }
 function start(){initAudio();if(AC&&AC.state==='suspended')AC.resume();reset();state='play';ui.className='hide';play('start',.9)}
 function rank(s){return s<10?'還付金 100円':s<20?'還付金 1,000円':s<35?'還付金 1万円':s<60?'還付金 10万円':'還付確定'}
 function showOver(sc,nb){
+  if(sc!==undefined){lastOver=[sc,nb,near,false];send()}   // 名前があれば終わった時点で送っておく
+  const [s,b,g]=lastOver;
   state='over';ui.className='';
-  const msg=`イータ君の中ビームよけで ${sc.toFixed(2)}秒 生きのびた（${rank(sc)}）`;
   ui.innerHTML=`<div class="over">ちんだ？</div>
-  <div class="big">${sc.toFixed(2)}<span style="font-size:.45em"> 秒</span></div>
-  <p>${rank(sc)}${nb?'　<b style="color:#ffd84a">ベスト更新！</b>':''}<br>ギリギリ回避 ${near} 回 ／ ベスト ${best.toFixed(2)} 秒</p>
+  <div class="big">${s.toFixed(2)}<span style="font-size:.45em"> 秒</span></div>
+  <p>${rank(s)}${b?'　<b style="color:#ffd84a">ベスト更新！</b>':''}<br>ギリギリ回避 ${g} 回 ／ ベスト ${best.toFixed(2)} 秒</p>
+  ${myName?'':`<input id="nm" class="nm" maxlength="12" placeholder="なまえを入れるとランキングに載る">`}
   <button class="btn go" id="go">もう一回</button>
-  <button class="btn line" id="ln">LINEで送る</button>`;
+  <button class="btn rk" id="rk">ランキング</button>`;
+  const takeName=()=>{const n=document.getElementById('nm');if(n&&n.value.trim()){saveName(n.value);send()}};
+  document.getElementById('go').onclick=()=>{takeName();start()};
+  document.getElementById('rk').onclick=()=>{takeName();showRank('over')};
+}
+async function showRank(from){
+  state='rank';ui.className='';
+  ui.innerHTML=`<h1 style="font-size:32px">ランキング</h1><div class="rkbox"><p>読み込み中…</p></div>`;
+  let d=null;
+  try{ if(pending){await pending;pending=null} d=await api({a:'list'}) }catch(e){}
+  const rows=d&&d.list?d.list:null, k=rows?rows.findIndex(r=>r.n===myName):-1;
+  const body=!rows?'<p>ランキングを読み込めませんでした。<br>電波のいい所でもう一回押してね。</p>'
+    :!rows.length?'<p>まだ誰も載っていない。<br>一番乗りのチャンス！</p>'
+    :'<table>'+rows.slice(0,10).map((r,i)=>`<tr class="${i===k?'me':''}"><td class="no">${['🥇','🥈','🥉'][i]||(i+1)}</td><td class="na">${esc(r.n)}</td><td class="sc">${Number(r.s).toFixed(2)}<small>秒</small></td></tr>`).join('')+'</table>'
+      +(k>=10?`<p>あなたは ${k+1} 位（${Number(rows[k].s).toFixed(2)}秒）</p>`:'');
+  ui.innerHTML=`<h1 style="font-size:32px">ランキング</h1>
+  <div class="rkbox">${body}</div>
+  ${myName?'':'<p style="font-size:13px;opacity:.8">なまえを入れて遊ぶとランキングに載ります</p>'}
+  <button class="btn go" id="go">${from==='over'?'もう一回':'はじめる'}</button>
+  <button class="btn rk" id="bk">もどる</button>`;
   document.getElementById('go').onclick=start;
-  document.getElementById('ln').onclick=()=>{
-    const u=/^https?:/.test(location.href)?'\n'+location.href:'';
-    window.open('https://line.me/R/share?text='+encodeURIComponent(msg+u),'_blank');
-  };
+  document.getElementById('bk').onclick=()=>from==='over'&&lastOver?showOver():showTitle();
 }
 
 face.onload=()=>{};
