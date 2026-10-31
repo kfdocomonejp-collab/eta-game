@@ -257,7 +257,7 @@ function showOver(sc,nb){
   const m=yen(s,g), anim=sc!==undefined;
   ui.innerHTML=`<div class="over">ちんだ。</div>
   <div class="slip"><h2>還付金のお知らせ</h2>
-   <div class="row"><span>還付金</span><span>${fmt(m.h)} 円</span></div><div class="sub">(生存 ${s.toFixed(2)}秒)<sup style="font-size:.85em">2</sup> × 30円</div>
+   <div class="row"><span>還付金</span><span>${fmt(m.h)} 円</span></div><div class="sub">生存 (${s.toFixed(2)}秒)<sup style="font-size:.85em">2</sup> × 30円</div>
    <div class="row"><span>還付加算金</span><span>${fmt(m.k)} 円</span></div><div class="sub">ギリギリ回避 ${g} 回（+${g*10}%）</div>
    <div class="row tot"><span>合計</span><span><b id="tot">${anim?0:fmt(m.y)}</b> 円</span></div><div class="note">※1円未満切捨て</div></div>
   <p style="font-size:15px;color:#ffd84a">還付金の振込予定日は<br>2026年11月21日……だったのに。</p>
