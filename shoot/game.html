@@ -67,13 +67,15 @@ function tone(f0,f1,dur,type='sawtooth',g=.08){
 const fmt=n=>n.toLocaleString('ja-JP');
 const rand=(a,b)=>a+Math.random()*(b-a), clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const KAN='一二三四五六七八九';
-let state='title', P, shots, foes, ebul, parts, floats, t, last, spawnT, fireT, best=0, shake=0, deadT=0;
+let state='title', P, beam, foes, ebul, parts, floats, t, last, spawnT, humT, best=0, shake=0, deadT=0;
 let score, life, inv, kills, boss, bossN, bossKills, nextBoss, loop;
 try{best=+localStorage.getItem('eta_shoot_best')||0}catch(e){}
 const FW=()=>U*17, FH=()=>FW()*192/256, HIT=()=>FW()*.22;
 const TW=()=>U*9, TH=()=>U*12;   // 牌の大きさ
+const GW=()=>U*7, GH=()=>U*9.3;   // イータ君が構える「中」の牌(発射口=牌の下側を上に向けて持つ)
+const DPS=8;   // ビームが1秒に削る硬さ
 let faceGone=false;
-function reset(){faceGone=false;P={x:W/2,y:H*.8};shots=[];foes=[];ebul=[];parts=[];floats=[];t=0;spawnT=.8;fireT=0;shake=0;
+function reset(){faceGone=false;P={x:W/2,y:H*.8};beam=null;foes=[];ebul=[];parts=[];floats=[];t=0;spawnT=.8;humT=0;shake=0;
   score=0;life=3;inv=0;kills=0;boss=null;bossN=0;bossKills=0;nextBoss=45;loop=1}
 
 // ---- 操作: 指をずらした分だけ動く(顔が指で隠れない) ----
@@ -101,9 +103,6 @@ function update(dt){
   t+=dt; inv=Math.max(0,inv-dt);
   const sp=U*60*dt; if(keys.ArrowLeft||keys.a)P.x-=sp; if(keys.ArrowRight||keys.d)P.x+=sp; if(keys.ArrowUp||keys.w)P.y-=sp; if(keys.ArrowDown||keys.s)P.y+=sp;
   P.x=clamp(P.x,FW()/2,W-FW()/2);P.y=clamp(P.y,H*.3,H-FH()/2);
-  // 自動で「中」を撃つ
-  fireT-=dt; if(fireT<=0){fireT=.12;shots.push({x:P.x,y:P.y-FH()*.45,vy:-U*110});if(Math.random()<.5)tone(1400,900,.04,'square',.012)}
-  for(const s of shots)s.y+=s.vy*dt; shots=shots.filter(s=>s.y>-U*5&&!s.dead);
   // ボスがいない間は雑魚
   if(!boss){ if(t>=nextBoss&&!foes.length)spawnBoss(); else if(t<nextBoss){spawnT-=dt;if(spawnT<=0){spawn();spawnT=interval()}} }
   for(const f of foes){
@@ -114,14 +113,19 @@ function update(dt){
     if(!inv&&Math.abs(f.x-P.x)<TW()*.45+HIT()&&Math.abs(f.y-P.y)<TH()*.45+HIT()){f.dead=true;burst(f.x,f.y,'#fff1c0',14);hurt()}
   }
   if(boss)bossUpdate(dt);
-  // 弾の当たり
-  for(const s of shots){
-    for(const f of foes){ if(f.dead)continue;
-      if(Math.abs(s.x-f.x)<TW()*.55&&Math.abs(s.y-f.y)<TH()*.55){s.dead=true;f.hp--;f.flash=.06;
-        if(f.hp<=0){f.dead=true;kills++;const p=f.n*100;score+=p;floatText(`+${fmt(p)}`,f.x,f.y,'#ffd84a');burst(f.x,f.y,f.k==='pin'?'#7ec8ff':'#fff1c0',16);tone(500,120,.18,'square',.05)}
-        break}
-    }
-    if(!s.dead&&boss&&boss.y>0&&Math.abs(s.x-boss.x)<TW()*1.15&&Math.abs(s.y-boss.y)<TH()*1.15){s.dead=true;boss.hp--;boss.flash=.05;if(boss.hp<=0)bossDown()}
+  // 構えた「中」の牌から上へビームを出し続ける。最初に当たった牌で止まって、その牌を削る
+  const py=P.y-FH()*.5-GH()*.9, bw=U*2.6;
+  let tg=null, ty=-U*10;
+  for(const f of foes)if(!f.dead&&f.y<py&&Math.abs(f.x-P.x)<TW()*.5+bw/2&&f.y+TH()/2>ty){tg=f;ty=f.y+TH()/2}
+  if(boss&&boss.y>0&&boss.y<py&&Math.abs(boss.x-P.x)<TW()*1.15+bw/2&&boss.y+TH()*1.15>ty){tg=boss;ty=boss.y+TH()*1.15}
+  beam={x:P.x,y0:py,y1:ty,hit:!!tg};
+  humT-=dt; if(humT<=0){humT=.09;tone(tg?520:380,tg?260:300,.08,'sawtooth',.012)}
+  if(tg){
+    tg.acc=(tg.acc||0)+dt*DPS; tg.flash=.05;
+    if(Math.random()<.7)parts.push({x:P.x+rand(-1,1)*U*2,y:ty,vx:rand(-1,1)*U*35,vy:rand(.2,1.2)*U*30,l:rand(.15,.35),c:'#ffd0a0'});
+    while(tg.acc>=1){tg.acc--;tg.hp--}
+    if(tg===boss){if(boss.hp<=0)bossDown()}
+    else if(tg.hp<=0){tg.dead=true;kills++;const p=tg.n*100;score+=p;floatText(`+${fmt(p)}`,tg.x,tg.y,'#ffd84a');burst(tg.x,tg.y,tg.k==='pin'?'#7ec8ff':'#fff1c0',16);tone(500,120,.18,'square',.05)}
   }
   foes=foes.filter(f=>!f.dead);
   for(const b of ebul){b.x+=b.vx*dt;b.y+=b.vy*dt;
@@ -211,7 +215,21 @@ function bossDraw(){
   cx.strokeStyle='#3a6ad0';cx.lineWidth=U*.9;cx.beginPath();cx.roundRect?cx.roundRect(-w*.32,-h*.36,w*.64,h*.72,U):cx.rect(-w*.32,-h*.36,w*.64,h*.72);cx.stroke();   // 白の青い枠
   cx.restore();
 }
-function shotDraw(s){const w=U*3.2,h=U*4.2;if(chun.complete&&chun.naturalWidth)cx.drawImage(chun,s.x-w/2,s.y-h/2,w,h);else{cx.fillStyle='#e0262b';cx.fillRect(s.x-w/4,s.y-h/2,w/2,h)}}
+function beamDraw(){   // 中ビームよけのビームと同じ見た目
+  const b=beam,L=b.y0-b.y1,bw=U*2.6*(1+.1*Math.sin(t*80));
+  cx.save();cx.globalCompositeOperation='lighter';
+  for(const [ww,c] of [[bw*2.4,'rgba(255,30,30,.25)'],[bw*1.4,'rgba(255,60,40,.6)'],[bw*.8,'rgba(255,220,180,.95)'],[bw*.35,'#fff']]){cx.fillStyle=c;cx.fillRect(b.x-ww/2,b.y1,ww,L)}
+  if(b.hit){const g=cx.createRadialGradient(b.x,b.y1,0,b.x,b.y1,U*5);g.addColorStop(0,'rgba(255,240,200,.9)');g.addColorStop(1,'rgba(255,60,40,0)');cx.fillStyle=g;cx.beginPath();cx.arc(b.x,b.y1,U*5,0,7);cx.fill()}
+  cx.restore();
+}
+function gunDraw(){   // 頭の上に構えた「中」の牌。発射口(牌の下側)が上を向くように逆さに持つ
+  const w=GW(),h=GH();
+  cx.save();cx.translate(P.x,P.y-FH()*.5-GH()*.42);cx.rotate(Math.PI);
+  cx.shadowColor='rgba(255,40,40,.9)';cx.shadowBlur=U*4;
+  rr(-w/2,-h/2+U*1,w,h,U*1.2,'#1d7a3e');cx.shadowBlur=0;
+  if(chun.complete&&chun.naturalWidth)cx.drawImage(chun,-w/2,-h/2,w,h);else rr(-w/2,-h/2,w,h,U*1.2,'#faf5dc');
+  cx.restore();
+}
 function faceDraw(){
   if(faceGone&&!(state==='dead'&&deadT<=.05))return;   // 撃たれた後(結果画面も)は顔を出さない
   if(inv>0&&Math.sin(t*40)>0)return;   // 当たった直後は点滅(無敵)
@@ -220,14 +238,15 @@ function faceDraw(){
   cx.shadowColor='rgba(0,0,0,.5)';cx.shadowBlur=U*3;cx.shadowOffsetY=U*1.5;
   if(face.complete)cx.drawImage(face,-w/2,-h/2,w,h);
   cx.restore();
+  gunDraw();
 }
 function draw(){
   cx.save();
   if(shake>.3)cx.translate(rand(-1,1)*shake,rand(-1,1)*shake);
   bg();
-  for(const s of shots)shotDraw(s);
   for(const f of foes)foeDraw(f);
   if(boss)bossDraw();
+  if(state==='play'&&beam)beamDraw();
   faceDraw();
   for(const b of ebul){cx.fillStyle='#ff4a4a';cx.beginPath();cx.arc(b.x,b.y,b.r,0,7);cx.fill();cx.fillStyle='#fff';cx.beginPath();cx.arc(b.x,b.y,b.r*.45,0,7);cx.fill()}
   for(const p of parts){cx.globalAlpha=clamp(p.l*2,0,1);cx.fillStyle=p.c;cx.fillRect(p.x-U*.6,p.y-U*.6,U*1.2,U*1.2)}
@@ -246,7 +265,7 @@ const ROOM=(QS.get('r')||QS2.get('r')||'main').slice(0,20), roomQ=ROOM!=='main'?
 function showTitle(){
   state='title';reset();
   ui.className='';ui.innerHTML=`<span class="tag">試作版</span><h1>イータ君<br><b>中</b>ビームで撃ち返せ</h1>
-  <p>今度はこっちが撃つ番。<br>指でなぞって動かすと、<br>口から「中」が勝手に出る。</p>
+  <p>今度はこっちが撃つ番。<br>イータ君が構えた「中」から<br>ビームが出っぱなし。<br>指でなぞって狙いをつけろ。</p>
   <p style="font-size:13px;opacity:.75">萬子は数字の数だけ当てると壊れる<br>筒子はくねくね動いて弾を撃ってくる<br>45秒ごとにボス「白」が来る</p>
   ${best?`<p>ベスト ${fmt(best)} 点</p>`:''}
   <button class="btn go" id="go">はじめる</button>
@@ -255,7 +274,7 @@ function showTitle(){
 }
 function start(){initAudio();if(AC&&AC.state==='suspended')AC.resume();reset();state='play';ui.className='hide';play('start',.9)}
 function showOver(nb){
-  state='over';foes=[];ebul=[];shots=[];boss=null;ui.className='';
+  state='over';foes=[];ebul=[];beam=null;boss=null;ui.className='';
   ui.innerHTML=`<div class="over">ちんだ。</div>
   <div class="slip"><h2>点数申告</h2>
    <div class="row"><span>撃破した牌</span><span>${kills} 枚</span></div>
