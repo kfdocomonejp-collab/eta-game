@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>イータ君 還付金キャッチ</title>
+<style>html,body{margin:0;height:100%;background:#083426;color:#fff8e6;font-family:serif;display:flex;align-items:center;justify-content:center}</style>
+</head>
+<body>
+<p>読み込み中…</p>
+<script>
+// 還付金キャッチの入口だけのページ。本体(game.html)は毎回キャッシュを使わずに最新版を読む
+fetch('game.html?v='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.text()}).then(h=>{
+  document.open();document.write(h);document.close();
+}).catch(()=>{location.replace('game.html?v='+Date.now())});
+</script>
+</body>
+</html>
