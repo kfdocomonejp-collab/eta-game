@@ -11,9 +11,16 @@
 <script>
 // 入口だけのページ。本体(game.html)は毎回キャッシュを使わずに最新版を読む
 // (GitHub Pages は10分、LINEの中のブラウザはもっと長く古い版を覚えていることがあるため)
+// LINEの https://liff.line.me/<LIFF ID>/catch/ から来た時は ?liff.state=/catch/... が付くので、LIFFに還付金キャッチへ転送してもらう
+if(/^\/catch/.test(new URLSearchParams(location.search).get('liff.state')||'')){
+  const s=document.createElement('script');s.src='https://static.line-scdn.net/liff/edge/2/sdk.js';
+  s.onload=()=>liff.init({liffId:'2012295121-PtYTLtJI'}).catch(()=>location.replace('catch/'));
+  s.onerror=()=>location.replace('catch/');document.head.appendChild(s);
+}else{
 fetch('game.html?v='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.text()}).then(h=>{
   document.open();document.write(h);document.close();
 }).catch(()=>{location.replace('game.html?v='+Date.now())});
+}
 </script>
 </body>
 </html>

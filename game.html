@@ -21,6 +21,7 @@ canvas{display:block;width:100vw;height:100vh;height:100dvh}
 .go{background:#ffd84a;color:#2a1a00}
 .line{background:#06c755;color:#fff}
 .rk{background:#fff8e6;color:#3a2000}
+.sw{pointer-events:auto;color:#ffd84a;font-size:14px;text-shadow:0 2px 0 #000}
 .nm{pointer-events:auto;font:16px/1.2 inherit;font-family:inherit;padding:10px 14px;border-radius:10px;border:2px solid #ffd84a;background:rgba(0,0,0,.35);color:#fff;width:min(260px,80vw);text-align:center;box-sizing:border-box}
 .rkbox{pointer-events:auto;background:rgba(0,0,0,.45);border:1px solid rgba(255,216,74,.5);border-radius:14px;padding:10px 14px;width:min(340px,88vw);box-sizing:border-box;max-height:55vh;overflow:auto}
 .rkbox table{width:100%;border-collapse:collapse;font-size:17px}
@@ -217,7 +218,7 @@ function draw(){
   cx.globalAlpha=1;
   if(state==='dead'){cx.fillStyle=`rgba(120,0,0,${Math.min(.45,deadT*.6)})`;cx.fillRect(-50,-50,W+100,H+100)}
   cx.restore();
-  hud.innerHTML=state==='play'?`${t.toFixed(2)}<small>秒 ／ ベスト ${best.toFixed(2)}</small>`:'';
+  hud.innerHTML=state==='play'?`${t.toFixed(2)}<small>秒 ／ 還付金 ${fmt(yen(t,near).y)} 円</small>`:'';
 }
 
 // ---- 画面 ----
@@ -243,11 +244,12 @@ function showTitle(){
   ${lineUser?`<p class="who">${lineUser.pic?`<img src="${esc(lineUser.pic)}">`:''}${esc(lineUser.name)} さん</p>`:`<input id="nm" class="nm" maxlength="12" placeholder="なまえ（ランキング用）" value="${esc(myName)}">`}
   ${best?`<p>ベスト 還付金 ${fmt(best)} 円</p>`:''}
   <button class="btn go" id="go">はじめる</button>
-  <button class="btn rk" id="rk">ランキング</button>`;
+  <button class="btn rk" id="rk">ランキング</button>
+  <a class="sw" id="sw" href="catch/${ROOM!=='main'?'?r='+encodeURIComponent(ROOM):''}">還付金キャッチであそぶ →</a>`;
   const nm=document.getElementById('nm'),take=()=>{if(nm)saveName(nm.value)};if(nm)nm.onchange=take;
   document.getElementById('go').onclick=()=>{take();start()};
   document.getElementById('rk').onclick=()=>{take();showRank('title')};
-  const rb=document.getElementById('rk').getBoundingClientRect();homeY=rb.bottom+U*3+FH()/2;P.y=clamp(homeY,FH()/2,H-FH()/2);
+  const rb=document.getElementById("sw").getBoundingClientRect();homeY=rb.bottom+U*3+FH()/2;P.y=clamp(homeY,FH()/2,H-FH()/2);
 }
 function start(){initAudio();if(AC&&AC.state==='suspended')AC.resume();reset();state='play';ui.className='hide';play('start',.9)}
 function showOver(sc,nb){
