@@ -244,12 +244,11 @@ function showTitle(){
   ${lineUser?`<p class="who">${lineUser.pic?`<img src="${esc(lineUser.pic)}">`:''}${esc(lineUser.name)} さん</p>`:`<input id="nm" class="nm" maxlength="12" placeholder="なまえ（ランキング用）" value="${esc(myName)}">`}
   ${best?`<p>ベスト 還付金 ${fmt(best)} 円</p>`:''}
   <button class="btn go" id="go">はじめる</button>
-  <button class="btn rk" id="rk">ランキング</button>
-  <a class="sw" id="sw" href="catch/${ROOM!=='main'?'?r='+encodeURIComponent(ROOM):''}">還付金キャッチであそぶ →</a>`;
+  <button class="btn rk" id="rk">ランキング</button>`;
   const nm=document.getElementById('nm'),take=()=>{if(nm)saveName(nm.value)};if(nm)nm.onchange=take;
   document.getElementById('go').onclick=()=>{take();start()};
   document.getElementById('rk').onclick=()=>{take();showRank('title')};
-  const rb=document.getElementById("sw").getBoundingClientRect();homeY=rb.bottom+U*3+FH()/2;P.y=clamp(homeY,FH()/2,H-FH()/2);
+  const rb=document.getElementById("rk").getBoundingClientRect();homeY=rb.bottom+U*3+FH()/2;P.y=clamp(homeY,FH()/2,H-FH()/2);
 }
 function start(){initAudio();if(AC&&AC.state==='suspended')AC.resume();reset();state='play';ui.className='hide';play('start',.9)}
 function showOver(sc,nb){
