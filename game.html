@@ -261,7 +261,7 @@ function showOver(sc,nb){
    <div class="row"><span>還付金</span><span>${fmt(m.h)} 円</span></div><div class="sub">生存 (${s.toFixed(2)}秒)<sup style="font-size:.85em">2</sup> × 30円</div>
    <div class="row"><span>還付加算金</span><span>${fmt(m.k)} 円</span></div><div class="sub">ギリギリ回避 ${g} 回（+${g*10}%）</div>
    <div class="row tot"><span>合計</span><span><b id="tot">${anim?0:fmt(m.y)}</b> 円</span></div><div class="note">※1円未満切捨て</div></div>
-  <p style="font-size:16px;color:#ffd84a">還付金額は${fmt(m.y)}円だったのに<b style="color:#ff3b3b">ちんだ。</b><br>麻雀で取り戻そう！！</p>
+  <p style="font-size:16px;color:#ffd84a">還付金を受け取れるはずだったのに<b style="color:#ff3b3b">ちんだ。</b><br>麻雀で取り返そう</p>
   <p>${b?'<b style="color:#ffd84a">ベスト更新！</b>　':''}ベスト ${fmt(best)} 円</p>
   ${myName?'':`<input id="nm" class="nm" maxlength="12" placeholder="なまえを入れるとランキングに載る">`}
   <button class="btn go" id="go">もう一回</button>
