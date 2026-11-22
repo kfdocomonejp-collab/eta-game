@@ -359,7 +359,7 @@ function judge(){
     $('cab').className='cab '+(mode==='BIG'?'big':'reg');fanfare();bgmPlay('big',4400);   // ファンファーレ→還付ビッグ・フィーバー
     msg('ビッグボーナス！　イータ君が3つ揃った');
   }else{
-    if(three==='H')pay=PAY.H; else if(three==='T')pay=PAY.T; else if(three==='S')pay=PAY.S; else if(three==='W'){replay=true;msg('リプレイ')}
+    if(three==='H')pay=PAY.H; else if(three==='T')pay=PAY.T; else if(three==='S')pay=PAY.S; else if(three==='W'){replay=true;msg('リプレイ');[[1047,0],[1319,.07],[1568,.14],[2093,.21]].forEach(([f,d])=>tone(f,f,.16,'triangle',.08,d))}
     if(line[0]==='K')pay+=PAY.K;
   }
   if(pay&&!mode)msg(({H:'發 發 發',T:'中 中 中',S:'サイコロ ×3'}[three]||'還付金')+`　${pay} 枚`);
