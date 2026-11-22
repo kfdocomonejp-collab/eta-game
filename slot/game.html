@@ -67,7 +67,7 @@ html,body{margin:0;height:100%;background:#07050c;overflow:hidden;touch-action:m
 #ledt.c{left:50%;transform:translate(-50%,-50%)}
 @keyframes mq{from{transform:translate(var(--from),-50%)}to{transform:translate(var(--to),-50%)}}
 .row2{display:flex;gap:10px;align-items:center;justify-content:space-between;width:var(--vw)}
-/* 拡大: 下のパネルをタップすると、パネルの上の方まで(絵の x26～887, y0～1190)を画面いっぱいに出す。もう一度パネルをタップすると元の大きさ */
+/* 拡大: 下の「拡大」ボタンで、パネルの上の方まで(絵の x26～887, y0～1190)を画面いっぱいに出す。「全体」ボタンで元の大きさ(パネルのタップでは切り替えない) */
 #view{position:relative;width:var(--vw);height:var(--vh);overflow:hidden;flex:none}
 #app.zoom .cab{transform:translate(var(--tx),var(--ty));filter:none}
 .belly{left:3%;top:63.6%;width:94%;height:29%;border:0;padding:0;background:transparent;cursor:zoom-in;-webkit-tap-highlight-color:transparent}
@@ -103,6 +103,12 @@ html,body{margin:0;height:100%;background:#07050c;overflow:hidden;touch-action:m
 .slip h2{margin:0 0 8px;font:normal 17px 'Dela Gothic One',sans-serif;text-align:center;letter-spacing:.3em;border-bottom:2px solid #2a2010;padding-bottom:4px}
 .slip .row{display:flex;justify-content:space-between;align-items:baseline}
 .slip .tot{border-top:1px solid #2a2010;margin-top:6px;padding-top:6px;font-weight:700}.slip .tot b{font:900 26px Orbitron,monospace;color:#b30000}
+.ttl{display:flex;flex-direction:column;align-items:center;gap:1px;background:#3b0a10;border:1.5px solid #c99a3c;border-radius:10px;padding:4px 18px 5px}.ttl b{font:normal 19px 'Dela Gothic One',sans-serif;color:#ffd84a;letter-spacing:.05em}.ttl small{font-size:11px;color:#e8c9a0}
+.res{width:min(320px,88vw);display:flex;flex-direction:column;gap:8px;animation:slipIn .35s ease-out}
+.rmax{background:#120500;border:1.5px solid #c99a3c;border-radius:10px;padding:6px 8px;display:flex;flex-direction:column;align-items:center}.rmax small{font-size:12px;color:#ffb22e}.rmax b{font:900 34px/1.15 Orbitron,monospace;color:#ff5a2c;text-shadow:0 0 8px rgba(255,60,20,.6)}.rmax b i{font:normal 14px sans-serif;color:#ffb22e}.rmax span{font-size:12px;color:#ccc}.rmax em{font-style:normal;font-weight:700}.rmax .p{color:#7dff8a}.rmax .m{color:#ff7a7a}
+.slump{background:#0c0203;border:1px solid #4a2a10;border-radius:10px;padding:5px 8px 4px;text-align:left}.slump small{font-size:11px;color:#ffb22e}.slump small i{font-style:normal;margin-left:6px}.slump svg{display:block;width:100%;height:96px;margin-top:2px}
+.kb{color:#ffd84a!important}.kc{color:#ff8ac0!important}
+.cells{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.cells div{background:#2a0609;border-radius:8px;padding:4px 2px;font:700 16px Orbitron,monospace;color:#fff;display:flex;flex-direction:column;align-items:center}.cells small{font:11px sans-serif;color:#bbb}
 .settei{font:20px 'Dela Gothic One',sans-serif!important;opacity:1!important}.settei b{font:44px 'Dela Gothic One',sans-serif;color:#ffd84a;display:inline-block;animation:pk .6s ease-out}
 @keyframes slipIn{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
 </style>
@@ -110,7 +116,6 @@ html,body{margin:0;height:100%;background:#07050c;overflow:hidden;touch-action:m
 <body>
 <div id="app">
   <div id="view"><div class="cab" id="cab">
-    <button class="belly" id="belly" aria-label="上を拡大"></button>
     <canvas id="c"></canvas>
     <canvas id="pay"></canvas>
     <div class="led" id="led"><span id="ledt"></span></div>
@@ -196,10 +201,11 @@ const N=21, SLIP=4, SPEED=19;   // SPEED=1秒に流れるコマ数
 const reels=[0,1,2].map(i=>({pos:Math.floor(Math.random()*N),spin:false,stopAt:null,bounce:0}));
 
 // ---- 状態 ----
+let hist=[],evs=[],minCredit=50,curChain=0,maxChain=0,sinceBonus=0,maxHamari=0;   // リザルト用: 持ちコインの推移・ボーナスの位置・最低枚数・連チャン・ハマり
 let betted=false, setting, credit, maxCredit, games, allGames, nBig, nReg, nChinda=0, chindaLost=0, replay, flag, pending, lampOn, mode, bonusPaid, payShow, busy, lastResult;
 function newSession(){
   let r=Math.random()*100; setting=1; for(let i=0;i<6;i++){if(r<SET_W[i]){setting=i+1;break}r-=SET_W[i]}
-  credit=50;maxCredit=50;betted=false;games=0;allGames=0;nBig=0;nReg=0;nChinda=0;chindaLost=0;replay=false;flag=null;pending=null;lampOn=false;mode=null;flipT=false;bigStock=false;setRb(false);bonusPaid=0;payShow=0;busy=false;
+  credit=50;maxCredit=50;hist=[50];evs=[];minCredit=50;curChain=0;maxChain=0;sinceBonus=0;maxHamari=0;betted=false;games=0;allGames=0;nBig=0;nReg=0;nChinda=0;chindaLost=0;replay=false;flag=null;pending=null;lampOn=false;mode=null;flipT=false;bigStock=false;setRb(false);bonusPaid=0;payShow=0;busy=false;
   setLamp(false);$('cab').className='cab';msg('');refresh();
 }
 // 電光掲示板。msg('') の時はふだんの文を流す。ボーナス中で歌が流れている間は、ボーナスの残り枚数の文より歌詞を優先する
@@ -258,7 +264,7 @@ function lever(){
   if(mode==='CHINDA'){ if(credit<=CR_MIN)return }   // ちんだボーナス中はコインを入れない(そのかわり毎回8枚取られる)
   else if(!replay){ if(!betted){const m=$('mb');m.style.animation='none';m.offsetWidth;m.style.animation='bl .3s 2';return} betted=false }   // 先に MAX BET(押していなければボタンを点滅させて知らせる)
   flipT=(mode==='CHINDA');   // 中の上下反転はレバーを叩いた時だけ切り替える(ちんだ揃い後の最初の回転で逆さ、最後の中中中の後の次の回転で戻る)
-  replay=false; payShow=0; if(!mode)games++; allGames++;   // games=ボーナス中を数えない(合算用) / allGames=全部(ランキングの記録チェック用)
+  replay=false; payShow=0; if(!mode){games++;sinceBonus++;maxHamari=Math.max(maxHamari,sinceBonus)} allGames++; hist.push(credit);minCredit=Math.min(minCredit,credit);   // games=ボーナス中を数えない(合算用) / allGames=全部(ランキングの記録チェック用)
   if(mode==='CHINDA'){flag={small:'T',bonus:null}}   // ちんだボーナス中は毎回中(コードT)が揃う(どこで押しても滑って揃う)
   else if(mode){flag={small:'H',bonus:null};   // ボーナス中は毎回發が揃う
     if(mode==='BIG'&&!bigStock&&Math.random()<(ROOM==='test'?1/20:1/BIG_IN)){bigStock=true;setRb(true);[1319,1568,1760,2093,2637].forEach((f,i)=>tone(f,f,.18,'triangle',.07,i*.06));setTimeout(()=>play('kimochi',1),300)}}   // ビッグ中もビッグを抽選。当たったら目が虹色+キラキラ音+「ニチャニチャー」→終わった直後にもう1回ビッグ
@@ -344,7 +350,7 @@ function judge(){
     if(chindaLost>=CHINDA_TOTAL){bgmStop();busy=true;setTimeout(()=>{busy=false;play('chindaend',1);msg(`ちんだボーナス終了　${CHINDA_TOTAL} 枚取られた`);mode=null;$('cab').className='cab';refresh();if(credit-3<CR_MIN)setTimeout(()=>finish(true),900)},400)}
     refresh();return;
   }else if(cnd&&pending==='CHINDA'){
-    mode='CHINDA';pending=null;setLamp(false);chindaLost=0;nChinda++;$('cab').className='cab chinda';
+    mode='CHINDA';pending=null;setLamp(false);chindaLost=0;nChinda++;evs.push([hist.length,'C']);sinceBonus=0;curChain=0;$('cab').className='cab chinda';
     play('chinda',.95);bgmPlay('chinda',5000);   // ち・ん・だが揃った時の曲(約5.2秒)→ちんだ音頭
     msg('ちんだボーナス……　中が揃うたびに 8 枚取られる');refresh();return;
   }else if(mode){
@@ -352,11 +358,11 @@ function judge(){
     if(three==='H'){pay=Math.min(BONUS_PAY,total-bonusPaid);bonusPaid+=pay}   // 最後のゲームは残りの枚数だけ(合計がちょうど315枚になる)
     msg(`${mode==='BIG'?'ビッグ':'レギュラー'}ボーナス中　あと ${Math.max(0,total-bonusPaid)} 枚`);
     if(bonusPaid>=total){bgmStop();busy=true;setTimeout(()=>{busy=false;
-      if(mode==='BIG'&&bigStock){bigStock=false;setRb(false);bonusPaid=0;nBig++;fanfare();bgmPlay('big',4400);msg('ビッグボーナス連チャン！　もう1回 315 枚');refresh();return}   // ビッグ中に当たっていたら、すぐにもう1回ビッグ
+      if(mode==='BIG'&&bigStock){bigStock=false;setRb(false);bonusPaid=0;nBig++;evs.push([hist.length,'B']);curChain++;maxChain=Math.max(maxChain,curChain);fanfare();bgmPlay('big',4400);msg('ビッグボーナス連チャン！　もう1回 315 枚');refresh();return}   // ビッグ中に当たっていたら、すぐにもう1回ビッグ
       play('bigend',.9);msg(`${mode==='BIG'?'ビッグ':'レギュラー'}ボーナス終了　${total} 枚獲得`);mode=null;$('cab').className='cab';refresh()},400)}
   }else if(three==='E'&&pending==='BIG'){
     mode=pending;pending=null;setLamp(false);bonusPaid=0;
-    if(mode==='BIG')nBig++;else nReg++;
+    if(mode==='BIG'){nBig++;evs.push([hist.length,'B']);curChain=1;maxChain=Math.max(maxChain,1)}else nReg++;sinceBonus=0;
     $('cab').className='cab '+(mode==='BIG'?'big':'reg');fanfare();bgmPlay('big',4400);   // ファンファーレ→還付ビッグ・フィーバー
     msg('ビッグボーナス！　イータ君が3つ揃った');
   }else{
@@ -452,7 +458,7 @@ $('mb').onclick=bet;
 {const s2=$('slv').cloneNode(true);s2.id='slv2';$('lvslot').appendChild(s2)}   // 拡大中に使うレバー(同じ絵)
 for(const id of ['slv','slv2'])$(id).onpointerdown=e=>{e.preventDefault();const b=$(id);if(b.disabled)return;b.classList.add('pull');setTimeout(()=>b.classList.remove('pull'),180);lever()};   // スタートレバー
 function setZoom(z){$('app').classList.toggle('zoom',z);$('zm').textContent=z?'全体':'拡大';try{localStorage.setItem('eta_slot_zoom',z?'1':'')}catch(e){}layout()}
-$('belly').onclick=()=>setZoom(!$('app').classList.contains('zoom'));$('zm').onclick=()=>setZoom(!$('app').classList.contains('zoom'));
+$('zm').onclick=()=>setZoom(!$('app').classList.contains('zoom'));
 try{if(localStorage.getItem('eta_slot_zoom'))setZoom(true)}catch(e){}
 [0,1,2].forEach(i=>{$('s'+i).onpointerdown=e=>{e.preventDefault();stop(i)}});
 cv.addEventListener('pointerdown',e=>{const b=cv.getBoundingClientRect(),i=Math.floor((e.clientX-b.left)/b.width*3);stop(clamp(i,0,2))});   // リールを直接タップしても止まる
@@ -490,21 +496,57 @@ function showTitle(){
 function finish(broke){
   bgmStop(true);
   const nb=maxCredit>best; if(nb){best=maxCredit;try{localStorage.setItem('eta_slot_best',best)}catch(e){}}
-  lastResult={games,allGames,big:nBig,reg:nReg,chinda:nChinda,max:maxCredit,end:credit,setting,broke,nb,sent:false}; send();
+  hist.push(credit);minCredit=Math.min(minCredit,credit);
+  lastResult={games,allGames,big:nBig,reg:nReg,chinda:nChinda,max:maxCredit,end:credit,setting,broke,nb,sent:false,hist:hist.slice(),evs:evs.slice(),min:minCredit,chain:maxChain,ham:maxHamari}; send();
   if(broke)play('over',1);
   showResult();
 }
+// 称号: 上から順に見て、最初に当てはまったものを出す(珍しいものほど上)
+const TITLES=[
+ [o=>o.chain>=4,'無限還付ループ','ビッグが4連チャン以上'],
+ [o=>o.max>=3000,'還付金長者','最大3000枚以上'],
+ [o=>o.chain===3,'連チャンの申し子','ビッグが3連チャン'],
+ [o=>o.chinda>=4,'ちんだの化身','ちんだ4回以上'],
+ [o=>o.min<=-500&&o.end>=500,'奇跡の更正','-500枚から+500枚まで復活'],
+ [o=>o.broke&&o.big>=3,'勝ち逃げ失敗','ビッグ3回以上なのに飲まれた'],
+ [o=>o.broke&&o.games<150,'秒で滞納','150G以内で-999枚'],
+ [o=>o.broke&&o.chinda>=2,'ちんだに全部持っていかれた','ちんだ2回以上で-999枚'],
+ [o=>o.broke,'差し押さえ','-999枚で終了'],
+ [o=>o.ham>=600,'ハマりの修行僧','600G以上ボーナスなし'],
+ [o=>o.big>=6,'ビッグ大量申告','ビッグ6回以上'],
+ [o=>o.chain===2,'連チャン体質','ビッグが2連チャン'],
+ [o=>o.end-50>=1500,'還付金ハンター','+1500枚以上'],
+ [o=>o.setting===6&&o.end>50,'設定6を見抜いた人','設定6で勝ち'],
+ [o=>o.setting===1&&o.end-50>=300,'低設定ねじ伏せ','設定1で+300枚以上'],
+ [o=>o.setting>=5&&o.end<50,'高設定を活かせず','設定5・6で負け'],
+ [o=>o.chinda>=2&&o.big===0,'ちんだ常連','ビッグなしでちんだ2回以上'],
+ [o=>o.chinda>=2,'ちんだと仲良し','ちんだ2回以上'],
+ [o=>o.big===0&&o.chinda===0&&o.games>=200,'ボーナス不服申立て','200G以上ボーナスなし'],
+ [o=>o.games>=1000,'確定申告の鬼','1000G以上回した'],
+ [o=>o.games<30,'お試し申告','30G未満でやめた'],
+ [o=>o.end-50>=500,'プラス収支の優等生','+500枚以上'],
+ [o=>o.end>50,'ちょい還付','少しだけプラス'],
+ [o=>o.end===50,'プラマイゼロ調整','ちょうど50枚'],
+ [o=>o.end-50>=-300,'軽めの追徴','少しだけマイナス'],
+ [o=>true,'重加算税','大きくマイナス']];
+function titleOf(o){const t=TITLES.find(t=>t[0](o));return [t[1],t[2]]}
+function slumpSVG(o){   // スランプグラフ(持ちコインの推移)。ビッグ=金・ちんだ=ピンクの縦線
+  const h=o.hist.length>1?o.hist:[50,o.end],n=h.length,W=300,H=110,P=6;
+  let lo=50,hi=50;for(const v of h){if(v<lo)lo=v;if(v>hi)hi=v}const rg=Math.max(50,hi-lo);
+  const X=i=>(i/(n-1)*(W-2*P)+P).toFixed(1),Y=v=>(H-P-(v-lo)/rg*(H-2*P)).toFixed(1);
+  const step=Math.max(1,Math.floor(n/300));let pts=[];for(let i=0;i<n;i+=step)pts.push(X(i)+','+Y(h[i]));pts.push(X(n-1)+','+Y(h[n-1]));
+  const ev=o.evs.map(([i,t])=>{const x=X(Math.min(i,n-1));return `<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="${t==='B'?'#ffd84a':'#ff4fa0'}" stroke-opacity=".5" vector-effect="non-scaling-stroke"/>`}).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${ev}<line x1="0" y1="${Y(50)}" x2="${W}" y2="${Y(50)}" stroke="#777" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/><polyline fill="none" stroke="#ff5a2c" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke" points="${pts.join(' ')}"/></svg>`}
 function showResult(){
-  const o=lastResult, tot=o.big+(o.chinda||0);
+  const o=lastResult, tot=o.big+(o.chinda||0), d=o.end-50, [tt,td]=titleOf(o);
   screen='result';ui.className='';ui.innerHTML=`<div class="over">${o.broke?'ちんだ。':'おつかれさま'}</div>
-  <div class="slip"><h2>本日の成績</h2>
-   <div class="row"><span>回したゲーム数</span><span>${fmt(o.games)} G</span></div>
-   <div class="row"><span>ビッグ ／ ちんだ</span><span>${o.big} 回 ／ ${o.chinda||0} 回</span></div>
-   <div class="row"><span>ボーナス合算</span><span>${tot?'1/'+Math.round(o.games/tot):'—'}</span></div>
-   <div class="row"><span>最後の持ちコイン</span><span>${fmt(o.end)} 枚</span></div>
-   <div class="row tot"><span>最大持ちコイン</span><span><b>${fmt(o.max)}</b> 枚</span></div></div>
+  <div class="ttl"><small>称号</small><b>${tt}</b><small>${td}</small></div>
+  <div class="res">
+   <div class="rmax"><small>最大持ちコイン</small><b>${fmt(o.max)}<i> 枚</i></b><span>最後 ${fmt(o.end)} 枚（<em class="${d>=0?'p':'m'}">${d>=0?'+':''}${fmt(d)}</em>）</span></div>
+   <div class="slump"><small>スランプグラフ <i class="kb">┃ビッグ</i> <i class="kc">┃ちんだ</i></small>${slumpSVG(o)}</div>
+   <div class="cells"><div><small>ゲーム</small>${fmt(o.games)}</div><div><small class="kb">BIG</small>${o.big}</div><div><small class="kc">ちんだ</small>${o.chinda||0}</div><div><small>合算</small>${tot?'1/'+Math.round(o.games/tot):'—'}</div></div>
+  </div>
   <p class="settei">本日の設定は <b id="st">？</b></p>
-  <p style="font-size:14px;color:#ffd84a">${o.broke?'還付金を全部突っ込んだ……。':'還付金の振込予定日は2026年11月21日。<br>それまで打つのはやめておこう。'}</p>
   <p>${o.nb?'<b style="color:#ffd84a">ベスト更新！</b>　':''}ベスト 最大 ${fmt(best)} 枚</p>
   ${myName?'':`<input id="nm" class="nm" maxlength="12" placeholder="なまえを入れるとランキングに載る">`}
   <button class="btn go" id="go">もう一回</button>
