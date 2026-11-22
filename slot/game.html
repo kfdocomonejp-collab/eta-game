@@ -6,7 +6,7 @@
 <title>イータ君スロット</title>
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=M+PLUS+Rounded+1c:wght@800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#fff8e6;--red:#e0262b;--gold:#ffd84a}
 html,body{margin:0;height:100%;background:#07050c;overflow:hidden;touch-action:manipulation;-webkit-user-select:none;user-select:none;font-family:"Hiragino Sans","Yu Gothic",sans-serif;color:var(--ink)}
@@ -62,8 +62,8 @@ html,body{margin:0;height:100%;background:#07050c;overflow:hidden;touch-action:m
 .cab #pay{left:7.97%;top:8.26%;width:84.17%;height:13.05%;border-radius:2.5%/9%}
 /* 電光掲示板: 黒地にオレンジのドット文字。長い文は右から左へ流れる */
 .led{left:9.6%;top:18.49%;width:80.8%;height:2.63%;background:#120500;border-radius:5px;overflow:hidden;box-shadow:inset 0 0 0 2px #2c1c08,0 0 0 1.5px #c99a3c}
-.led::after{content:'';position:absolute;inset:0;background:radial-gradient(circle,rgba(0,0,0,0) 42%,rgba(0,0,0,.6) 52%) 0 0/3px 3px;pointer-events:none}
-#ledt{position:absolute;top:50%;left:0;transform:translateY(-50%);white-space:nowrap;font:calc(var(--cw)*.036)/1 'DotGothic16',monospace;color:#ffb22e;text-shadow:0 0 3px #ff8a00,0 0 8px rgba(255,120,0,.7);letter-spacing:.08em}
+.led::after{content:'';position:absolute;inset:0;background:radial-gradient(circle,rgba(0,0,0,0) 55%,rgba(0,0,0,.28) 70%) 0 0/2px 2px;pointer-events:none}
+#ledt{position:absolute;top:50%;left:0;transform:translateY(-50%);white-space:nowrap;font:800 calc(var(--cw)*.039)/1 'M PLUS Rounded 1c','DotGothic16',sans-serif;color:#ffc04a;text-shadow:0 0 2px rgba(255,140,0,.9),0 0 6px rgba(255,120,0,.45);letter-spacing:.05em}
 #ledt.c{left:50%;transform:translate(-50%,-50%)}
 @keyframes mq{from{transform:translate(var(--from),-50%)}to{transform:translate(var(--to),-50%)}}
 .row2{display:flex;gap:10px;align-items:center;justify-content:space-between;width:var(--vw)}
@@ -208,7 +208,7 @@ let ledNow=null;
 function setLed(t,dur){if(t===ledNow)return;ledNow=t;const sp=$('ledt'),box=$('led');sp.textContent=t;sp.style.animation='none';sp.style.fontSize='';sp.className='';
   const bw=box.clientWidth;let tw=sp.scrollWidth;if(tw<=bw-8){sp.className='c';return}
   if(dur){   // 歌詞: 歌っている間に読み切れるように。まず文字を少し小さくして収め、それでも長ければ左から見せて歌詞の長さで流し切る
-    const fs=parseFloat(getComputedStyle(sp).fontSize);sp.style.fontSize=fs*Math.max(.72,(bw-10)/tw)+'px';tw=sp.scrollWidth;
+    const fs=parseFloat(getComputedStyle(sp).fontSize);sp.style.fontSize=fs*Math.max(.9,(bw-10)/tw)+'px';tw=sp.scrollWidth;
     if(tw<=bw-8){sp.className='c';return}
     sp.style.setProperty('--from','6px');sp.style.setProperty('--to',(bw-tw-6)+'px');sp.offsetWidth;sp.style.animation=`mq ${Math.max(1.2,dur*.8).toFixed(1)}s linear forwards`;return}
   sp.style.setProperty('--from',bw+'px');sp.style.setProperty('--to',-tw+'px');sp.offsetWidth;sp.style.animation=`mq ${((bw+tw)/60).toFixed(1)}s linear infinite`}
