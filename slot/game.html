@@ -219,7 +219,7 @@ let hist=[],evs=[],minCredit=50,curChain=0,maxChain=0,sinceBonus=0,maxHamari=0; 
 let betted=false, setting, credit, maxCredit, games, allGames, nBig, nReg, nChinda=0, chindaLost=0, replay, flag, pending, lampOn, mode, bonusPaid, payShow, busy, lastResult;
 function newSession(){
   let r=Math.random()*100; setting=1; for(let i=0;i<6;i++){if(r<SET_W[i]){setting=i+1;break}r-=SET_W[i]}
-  credit=50;maxCredit=50;hist=[50];evs=[];minCredit=50;curChain=0;maxChain=0;sinceBonus=0;maxHamari=0;betted=false;games=0;allGames=0;nBig=0;nReg=0;nChinda=0;chindaLost=0;replay=false;flag=null;pending=null;lampOn=false;mode=null;flipT=false;bigStock=false;setRb(false);bonusPaid=0;payShow=0;busy=false;
+  playing=true;sentMax=0;credit=50;maxCredit=50;hist=[50];evs=[];minCredit=50;curChain=0;maxChain=0;sinceBonus=0;maxHamari=0;betted=false;games=0;allGames=0;nBig=0;nReg=0;nChinda=0;chindaLost=0;replay=false;flag=null;pending=null;lampOn=false;mode=null;flipT=false;bigStock=false;setRb(false);bonusPaid=0;payShow=0;busy=false;
   setLamp(false);$('cab').className='cab';msg('');refresh();
 }
 // 電光掲示板。msg('') の時はふだんの文を流す。ボーナス中で歌が流れている間は、ボーナスの残り枚数の文より歌詞を優先する
@@ -493,7 +493,20 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 function saveName(v){myName=v.trim().slice(0,12);try{localStorage.setItem('eta_chun_name',myName)}catch(e){}}
 function api(q){const b={r:ROOM,k:'slot'};if(lineUser){b.u=lineUser.id;if(lineUser.pic)b.p=lineUser.pic}return fetch(API+'?'+new URLSearchParams(Object.assign(b,q))).then(r=>r.json())}
 let pending_=null, screen='';
-function send(){const o=lastResult;if(!o||o.sent||!myName||!(o.games>0))return;o.sent=true;pending_=api({a:'add',n:myName,s:o.allGames,g:o.big,y:o.max}).catch(()=>null)}
+// 「やめる」を押さずに閉じた時もランキングに載せる: 遊んでいる途中でアプリを閉じた・切り替えた瞬間に、その時点の最大持ちコインを送る
+// (ランキングは人ごとの最高記録なので、同じ回で何度送っても順位は変わらない。前に送った最大枚数を超えた時だけ送る)
+let playing=false, sentMax=0;
+function sendLive(){
+  if(!playing||!(games>0))return;
+  if(maxCredit>best){best=maxCredit;try{localStorage.setItem('eta_slot_best',best)}catch(e){}}
+  if(!myName||maxCredit<=sentMax)return; sentMax=maxCredit;
+  const b={r:ROOM,k:'slot',a:'add',n:myName,s:allGames,g:nBig,y:maxCredit};if(lineUser){b.u=lineUser.id;if(lineUser.pic)b.p=lineUser.pic}
+  try{fetch(API+'?'+new URLSearchParams(b),{keepalive:true,mode:'no-cors'})}catch(e){}   // 閉じる途中でも届くように keepalive
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')sendLive()});
+addEventListener('pagehide',sendLive);
+function send(){const o=lastResult;if(!o||o.sent||!myName||!(o.games>0))return;o.sent=true;if(o.max<=sentMax)return;   // 途中で送った記録と同じなら送り直さない
+pending_=api({a:'add',n:myName,s:o.allGames,g:o.big,y:o.max}).catch(()=>null)}
 function showTitle(){
   screen='title';ui.className='';ui.innerHTML=`<h1><small>イータ君</small><b>スロット</b></h1>
   <p>「回す」を押して、下のボタンで<br>リールを1つずつ止める。<br>左下のイータ君の<b style="color:#ff5a3a">目が赤く光ったら</b>ボーナス確定。<br>イータ君が3つ揃えばビッグ。<br><b style="color:#ff5a3a">ち・ん・だ</b>が揃ったら……覚悟しろ。</p>
@@ -508,7 +521,7 @@ function showTitle(){
   $('rk').onclick=()=>{take();showRank('title')};
 }
 function finish(broke){
-  bgmStop(true);
+  bgmStop(true);playing=false;
   const nb=maxCredit>best; if(nb){best=maxCredit;try{localStorage.setItem('eta_slot_best',best)}catch(e){}}
   hist.push(credit);minCredit=Math.min(minCredit,credit);
   lastResult={games,allGames,big:nBig,reg:nReg,chinda:nChinda,max:maxCredit,end:credit,setting,broke,nb,sent:false,hist:hist.slice(),evs:evs.slice(),min:minCredit,chain:maxChain,ham:maxHamari}; send();
