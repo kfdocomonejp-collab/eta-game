@@ -65,6 +65,17 @@ html,body{margin:0;height:100%;background:#07050c;overflow:hidden;touch-action:m
 .led::after{content:'';position:absolute;inset:0;background:radial-gradient(circle,rgba(0,0,0,0) 55%,rgba(0,0,0,.28) 70%) 0 0/2px 2px;pointer-events:none}
 #ledt{position:absolute;top:50%;left:0;transform:translateY(-50%);white-space:nowrap;font:800 calc(var(--cw)*.039)/1 'M PLUS Rounded 1c','DotGothic16',sans-serif;color:#ffc04a;text-shadow:0 0 2px rgba(255,140,0,.9),0 0 6px rgba(255,120,0,.45);letter-spacing:.05em}
 #ledt.c{left:50%;transform:translate(-50%,-50%)}
+/* パトランプ: 筐体の一番上の赤いランプ。ボーナス中だけ光る(ビッグ=左・中・右が順に赤白く点滅、ちんだ=紫の不気味な点滅) */
+.pato{left:7.4%;top:.9%;width:85.6%;height:5.8%;pointer-events:none;opacity:0;transition:opacity .3s}
+.pato i{position:absolute;top:0;height:100%;border-radius:12%/30%;mix-blend-mode:screen;opacity:0}
+.pato i:nth-child(1){left:0;width:27.3%}.pato i:nth-child(2){left:27.3%;width:45.4%}.pato i:nth-child(3){left:72.7%;width:27.3%}
+.cab.big .pato,.cab.chinda .pato{opacity:1}
+.cab.big .pato i{background:radial-gradient(ellipse at center,rgba(255,240,220,.95),rgba(255,60,30,.75) 45%,rgba(255,0,0,.25) 80%);box-shadow:0 0 14px 4px rgba(255,40,20,.85);animation:pato .6s linear infinite}
+.cab.big .pato i:nth-child(2){animation-delay:.2s}.cab.big .pato i:nth-child(3){animation-delay:.4s}
+@keyframes pato{0%,30%{opacity:1}45%,100%{opacity:0}}
+.cab.chinda .pato i{background:radial-gradient(ellipse at center,rgba(255,170,255,.9),rgba(170,0,200,.7) 50%,rgba(90,0,120,.2) 85%);box-shadow:0 0 16px 5px rgba(190,0,180,.8);animation:patoC 1.6s ease-in-out infinite}
+.cab.chinda .pato i:nth-child(2){animation-delay:.12s}
+@keyframes patoC{0%,100%{opacity:.15}40%{opacity:1}55%{opacity:.35}65%{opacity:.95}}
 @keyframes mq{from{transform:translate(var(--from),-50%)}to{transform:translate(var(--to),-50%)}}
 .row2{display:flex;gap:10px;align-items:center;justify-content:space-between;width:var(--vw)}
 /* 拡大: 下の「拡大」ボタンで、パネルの上の方まで(絵の x26～887, y0～1190)を画面いっぱいに出す。「全体」ボタンで元の大きさ(パネルのタップでは切り替えない) */
@@ -118,6 +129,7 @@ html,body{margin:0;height:100%;background:#07050c;overflow:hidden;touch-action:m
   <div id="view"><div class="cab" id="cab">
     <canvas id="c"></canvas>
     <canvas id="pay"></canvas>
+    <div class="pato" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="led" id="led"><span id="ledt"></span></div>
     <div class="lcd" hidden><div class="msg" id="msg"></div></div>
     <i class="lp" id="b3"></i><i class="lp" id="b2"></i><i class="lp" id="b1"></i>
@@ -246,8 +258,8 @@ function setRb(on){$('lamp').classList.toggle('rb',on)}
 // ---- 抽選(レバーを押した瞬間に決まる) ----
 function lottery(){
   const S=SET[setting]; let r=Math.random(), bonus=null, small=null;
-  const TEST=ROOM==='test';   // テスト用の部屋(?r=test)だけボーナスを約1/10に(ビッグ1/14・ちんだ1/30)。本番(グループの部屋)はふつうの確率
-  const pC=TEST?1/30:1/S.chinda, pB=TEST?1/5:1/S.big;
+  const TEST=ROOM==='test';   // テスト用の部屋(?r=test)だけボーナスを当たりやすく(ビッグ1/5・ちんだ1/5)。本番(グループの部屋)はふつうの確率
+  const pC=TEST?1/5:1/S.chinda, pB=TEST?1/5:1/S.big;
   if(!pending){
     if(r<pC)bonus='CHINDA';
     else if((r-=pC)<pB)bonus='BIG';
