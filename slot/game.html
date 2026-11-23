@@ -244,7 +244,7 @@ function refresh(){
   const spinning=reels.some(r=>r.spin);
   $('slv').disabled=!canSpin();if($('slv2'))$('slv2').disabled=!canSpin();
   $('mb').disabled=!canBet();$('mb').classList.toggle('on',betted||replay||mode==='CHINDA');
-  $('ct').textContent=mode==='BIG'?Math.max(0,BIG_TOTAL-bonusPaid):mode==='CHINDA'?Math.max(0,CHINDA_TOTAL-chindaLost):games;   // COUNT: ふだんはゲーム数、ボーナス中は残り枚数
+  $('ct').textContent=mode==='BIG'?Math.max(0,BIG_TOTAL-bonusPaid):mode==='CHINDA'?Math.max(0,CHINDA_TOTAL-chindaLost):sinceBonus;   // COUNT: ふだんは前回ボーナス後のゲーム数(ボーナスが終わると0から)、ボーナス中は残り枚数
   const bet=betted||replay||mode==='CHINDA'||spinning;['b3','b2','b1'].forEach((id,k)=>$(id).classList.toggle('on',bet&&(mode!=='BIG'||id==='b1')));   // 賭け枚数ランプ(ふだんは3枚とも、ビッグ中は1枚だけ点く)
   $('lS').classList.toggle('on',canSpin());$('lR').classList.toggle('on',replay);$('lW').classList.toggle('on',spinning);$('lI').classList.toggle('on',canBet());
   reels.forEach((r,i)=>$('s'+i).className='sb'+(r.spin&&r.stopAt==null?' act':''));
@@ -261,7 +261,8 @@ function setRb(on){$('lamp').classList.toggle('rb',on)}
 function lottery(){
   const S=SET[setting]; let r=Math.random(), bonus=null, small=null;
   const TEST=ROOM==='test';   // テスト用の部屋(?r=test)だけボーナスを当たりやすく(ビッグ1/5・ちんだ1/5)。本番(グループの部屋)はふつうの確率
-  const pC=TEST?1/5:1/S.chinda, pB=TEST?1/5:1/S.big;
+  const T2=ROOM==='test2';   // COUNT確認用の部屋(?r=test2): ボーナス1/20・ビッグ中の連チャンなし
+  const pC=TEST?1/5:T2?1/20:1/S.chinda, pB=TEST?1/5:T2?1/20:1/S.big;
   if(!pending){
     if(r<pC)bonus='CHINDA';
     else if((r-=pC)<pB)bonus='BIG';
@@ -281,7 +282,7 @@ function lever(){
   replay=false; payShow=0; if(!mode){games++;sinceBonus++;maxHamari=Math.max(maxHamari,sinceBonus)} allGames++; hist.push(credit);minCredit=Math.min(minCredit,credit);   // games=ボーナス中を数えない(合算用) / allGames=全部(ランキングの記録チェック用)
   if(mode==='CHINDA'){flag={small:'T',bonus:null}}   // ちんだボーナス中は毎回中(コードT)が揃う(どこで押しても滑って揃う)
   else if(mode){flag={small:'H',bonus:null};   // ボーナス中は毎回發が揃う
-    if(mode==='BIG'&&!bigStock&&Math.random()<(ROOM==='test'?1/20:1/BIG_IN)){bigStock=true;setRb(true);[1319,1568,1760,2093,2637].forEach((f,i)=>tone(f,f,.18,'triangle',.07,i*.06));setTimeout(()=>play('kimochi',1),300)}}   // ビッグ中もビッグを抽選。当たったら目が虹色+キラキラ音+「ニチャニチャー」→終わった直後にもう1回ビッグ
+    if(mode==='BIG'&&!bigStock&&ROOM!=='test2'&&Math.random()<(ROOM==='test'?1/20:1/BIG_IN)){bigStock=true;setRb(true);[1319,1568,1760,2093,2637].forEach((f,i)=>tone(f,f,.18,'triangle',.07,i*.06));setTimeout(()=>play('kimochi',1),300)}}   // ビッグ中もビッグを抽選。当たったら目が虹色+キラキラ音+「ニチャニチャー」→終わった直後にもう1回ビッグ
   else{
     flag=lottery();
     if(flag.bonus){pending=flag.bonus; let q=Math.random(),k=0; while(k<3&&(q-=LIGHT_AT[k])>=0)k++; flag.lightAt=k;
